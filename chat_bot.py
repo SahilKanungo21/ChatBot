@@ -9,6 +9,8 @@ from nltk.stem import WordNetLemmatizer
 
 from keras.models import load_model
 
+from flask import Flask, jsonify
+
 lemmatizer = WordNetLemmatizer()
 intents = json.loads(open('intents.json').read())
 
@@ -16,6 +18,8 @@ words = pickle.load(open('words.pkl', 'rb'))
 classes = pickle.load(open('classes.pkl', 'rb'))
 
 model = load_model('chatbot.model.h5')
+
+app = Flask(__name__)
 
 
 def clean_up_sentence(sentence):
@@ -55,13 +59,20 @@ def get_response(intents_list, intents_json):
         if i['tag'] == tag:
             result = random.choice(i['responses'])
             break
-
     return result
 
-print("Bot is running")
-#TODO: Make it the endpoint and connect with android studio
-while True:
-    message = input("")
-    ints = predict_class(message)
-    res = get_response(ints, intents)
-    print(res)
+
+def MessageFromModel(user_message):
+    ints = predict_class(user_message)
+    bot_message = get_response(ints, intents)
+    return bot_message
+
+
+@app.route('/BotMessage/<string:userMessage>', methods=['GET'])
+def GetBotMessageFromModel(userMessage: str):
+    result = {'botMessage': MessageFromModel(userMessage)}
+    return jsonify(result)
+
+
+if __name__ == '__main__':
+    app.run()
